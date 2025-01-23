@@ -12,28 +12,16 @@ public class ContainerManager {
 
     private final LockContainer plugin;
     private final Set<Material> supportedContainers = new HashSet<>(Arrays.asList(
-            Material.CHEST,
-            Material.TRAPPED_CHEST,
-            Material.FURNACE,
-            Material.HOPPER,
-            Material.DISPENSER,
-            Material.DROPPER,
-            Material.BREWING_STAND,
-            Material.BLACK_SHULKER_BOX,
-            Material.BLUE_SHULKER_BOX,
-            Material.BROWN_SHULKER_BOX,
-            Material.CYAN_SHULKER_BOX,
-            Material.GRAY_SHULKER_BOX,
-            Material.GREEN_SHULKER_BOX,
-            Material.LIGHT_BLUE_SHULKER_BOX,
-            Material.LIME_SHULKER_BOX,
-            Material.MAGENTA_SHULKER_BOX,
-            Material.ORANGE_SHULKER_BOX,
-            Material.PINK_SHULKER_BOX,
-            Material.PURPLE_SHULKER_BOX,
-            Material.RED_SHULKER_BOX,
-            Material.SILVER_SHULKER_BOX,
-            Material.WHITE_SHULKER_BOX,
+            Material.CHEST, Material.TRAPPED_CHEST, Material.FURNACE,
+            Material.HOPPER, Material.DISPENSER, Material.DROPPER,
+            Material.BREWING_STAND, Material.BLACK_SHULKER_BOX,
+            Material.BLUE_SHULKER_BOX, Material.BROWN_SHULKER_BOX,
+            Material.CYAN_SHULKER_BOX, Material.GRAY_SHULKER_BOX,
+            Material.GREEN_SHULKER_BOX, Material.LIGHT_BLUE_SHULKER_BOX,
+            Material.LIME_SHULKER_BOX, Material.MAGENTA_SHULKER_BOX,
+            Material.ORANGE_SHULKER_BOX, Material.PINK_SHULKER_BOX,
+            Material.PURPLE_SHULKER_BOX, Material.RED_SHULKER_BOX,
+            Material.SILVER_SHULKER_BOX, Material.WHITE_SHULKER_BOX,
             Material.YELLOW_SHULKER_BOX
     ));
     private final Set<Material> customContainers = new HashSet<>();
@@ -49,12 +37,12 @@ public class ContainerManager {
 
     public void registerCustomContainer(Material containerType) {
         customContainers.add(containerType);
-        plugin.getLogger().info("Registered custom container: " + containerType.name());
+        plugin.getLogger().info("已注册自定义容器: " + containerType.name());
     }
 
     public void unregisterCustomContainer(Material containerType) {
         customContainers.remove(containerType);
-        plugin.getLogger().info("Unregistered custom container: " + containerType.name());
+        plugin.getLogger().info("已取消注册自定义容器: " + containerType.name());
     }
 
     public void setAddingPlayer(Player player, Location location) {
@@ -99,5 +87,18 @@ public class ContainerManager {
             }
         }
         return connected;
+    }
+
+    public Location getMainContainerLocation(Location loc) {
+        List<Location> connected = getConnectedContainers(loc);
+        if (connected.isEmpty()) return loc;
+
+        return connected.stream()
+                .min((a, b) -> {
+                    if (a.getX() != b.getX()) return Double.compare(a.getX(), b.getX());
+                    if (a.getZ() != b.getZ()) return Double.compare(a.getZ(), b.getZ());
+                    return Double.compare(a.getY(), b.getY());
+                })
+                .orElse(loc);
     }
 }

@@ -73,7 +73,7 @@ public class DataManager {
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().severe("Data load failed: " + e.getMessage());
+            plugin.getLogger().severe("数据加载失败: " + e.getMessage());
         }
     }
 
@@ -81,7 +81,7 @@ public class DataManager {
         try (FileWriter writer = new FileWriter(dataFile)) {
             gson.toJson(containerDataCache, writer);
         } catch (IOException e) {
-            plugin.getLogger().severe("Data save failed: " + e.getMessage());
+            plugin.getLogger().severe("数据保存失败: " + e.getMessage());
         }
     }
 

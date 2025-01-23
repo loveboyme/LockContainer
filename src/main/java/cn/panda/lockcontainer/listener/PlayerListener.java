@@ -3,18 +3,18 @@ package cn.panda.lockcontainer.listener;
 import cn.panda.lockcontainer.LockContainer;
 import cn.panda.lockcontainer.core.DataManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 
+import java.util.List;
 import java.util.UUID;
 
 public class PlayerListener implements Listener {
@@ -29,24 +29,22 @@ public class PlayerListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
-        Action action = event.getAction();
+        if (block == null) return;
 
-        if (action == Action.RIGHT_CLICK_BLOCK && block != null && player.isSneaking()) {
-            if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
-                Location containerLoc = findNearbyContainer(block.getLocation());
-                if (containerLoc != null && plugin.getDataManager().isContainerLocked(containerLoc)) {
-                    DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
-                    if (data != null) {
-                        boolean isOwner = player.getUniqueId().equals(data.owner);
-                        boolean isTrusted = data.trustedPlayers.contains(player.getUniqueId());
+        if ((block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) && player.isSneaking()) {
+            Location containerLoc = findNearbyContainer(block.getLocation());
+            if (containerLoc != null && plugin.getDataManager().isContainerLocked(containerLoc)) {
+                DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
+                if (data != null) {
+                    boolean isOwner = player.getUniqueId().equals(data.owner);
+                    boolean isTrusted = data.trustedPlayers.contains(player.getUniqueId());
 
-                        if (isOwner) {
-                            plugin.getGUIHandler().openMainMenu(player, containerLoc);
-                            event.setCancelled(true);
-                        } else if (isTrusted) {
-                            player.sendMessage("§a你已被信任，但无法修改容器设置");
-                            event.setCancelled(true);
-                        }
+                    if (isOwner) {
+                        plugin.getGUIHandler().openMainMenu(player, containerLoc);
+                        event.setCancelled(true);
+                    } else if (isTrusted) {
+                        player.sendMessage("§a你已被信任，但无法修改容器设置");
+                        event.setCancelled(true);
                     }
                 }
             }
@@ -88,10 +86,19 @@ public class PlayerListener implements Listener {
     }
 
     private void handleAddPlayer(Player player, Location loc, UUID targetUUID, String displayName) {
-        if (plugin.getDataManager().addTrustedPlayer(loc, targetUUID)) {
-            player.sendMessage("§a已添加玩家: " + displayName);
+        List<Location> connectedContainers = plugin.getContainerManager().getConnectedContainers(loc);
+        int addedCount = 0;
+
+        for (Location containerLoc : connectedContainers) {
+            if (plugin.getDataManager().addTrustedPlayer(containerLoc, targetUUID)) {
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0) {
+            player.sendMessage("§a已将玩家 " + displayName + " 添加到容器组的 " + addedCount + " 个部件");
         } else {
-            player.sendMessage("§c该玩家已在信任列表中");
+            player.sendMessage("§c该玩家已在所有关联容器的信任列表中");
         }
     }
 

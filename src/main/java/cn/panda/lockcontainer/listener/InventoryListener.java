@@ -6,7 +6,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,6 +14,10 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.block.BlockState;
+import java.util.Collections;
+import java.util.List;
 
 public class InventoryListener implements Listener {
 
@@ -30,24 +33,34 @@ public class InventoryListener implements Listener {
         Location loc = event.getInventory().getLocation();
         if (loc == null) return;
 
-        if (plugin.getDataManager().isContainerLocked(loc)) {
-            Player player = (Player) event.getPlayer();
-            DataManager.ContainerData data = plugin.getDataManager().getContainerData(loc);
-            if (data != null) {
-                boolean isOwner = player.getUniqueId().equals(data.owner);
-                boolean isTrusted = data.trustedPlayers.contains(player.getUniqueId());
-                if (!isOwner && !isTrusted) {
-                    event.setCancelled(true);
-                    player.sendMessage("§c该容器已被锁定，无访问权限！");
+        Player player = (Player) event.getPlayer();
+        List<Location> connectedContainers = plugin.getContainerManager().getConnectedContainers(loc);
 
-                    // 延迟关闭界面以阻止声音
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        if (player.getOpenInventory() != null) {
-                            player.closeInventory();
-                        }
-                    }, 1L);
+        boolean anyLocked = connectedContainers.stream()
+                .anyMatch(containerLoc -> plugin.getDataManager().isContainerLocked(containerLoc));
+
+        if (!anyLocked) return;
+
+        boolean isOwner = connectedContainers.stream()
+                .anyMatch(containerLoc -> {
+                    DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
+                    return data != null && data.owner.equals(player.getUniqueId());
+                });
+
+        boolean isTrusted = connectedContainers.stream()
+                .anyMatch(containerLoc -> {
+                    DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
+                    return data != null && data.trustedPlayers.contains(player.getUniqueId());
+                });
+
+        if (!isOwner && !isTrusted) {
+            event.setCancelled(true);
+            player.sendMessage("§c该容器组已被锁定，无访问权限！");
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.getOpenInventory() != null) {
+                    player.closeInventory();
                 }
-            }
+            }, 1L);
         }
     }
 
@@ -61,10 +74,8 @@ public class InventoryListener implements Listener {
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null) return;
 
-            // 获取隐藏的位置标记
             ItemStack locationMarker = event.getInventory().getItem(0);
-            if (locationMarker == null ||
-                    !locationMarker.hasItemMeta() ||
+            if (locationMarker == null || !locationMarker.hasItemMeta() ||
                     !locationMarker.getItemMeta().getDisplayName().startsWith("§bLOCK_LOC:")) {
                 player.sendMessage("§c系统错误：容器位置数据丢失");
                 return;
@@ -83,9 +94,9 @@ public class InventoryListener implements Listener {
                 DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
                 if (data != null && data.owner.equals(player.getUniqueId())) {
                     boolean success = plugin.getDataManager().unlockContainer(containerLoc);
-                    player.sendMessage(success ? "§a容器已成功解锁！" : "§c解锁失败：容器未被锁定");
+                    player.sendMessage(success ? "§a容器组已成功解锁！" : "§c解锁失败：容器组未被锁定");
                 } else {
-                    player.sendMessage("§c只有所有者可以解锁容器！");
+                    player.sendMessage("§c只有所有者可以解锁容器组！");
                 }
                 player.closeInventory();
             }
@@ -95,12 +106,11 @@ public class InventoryListener implements Listener {
     @EventHandler
     public void onInventoryMove(InventoryMoveItemEvent event) {
         InventoryHolder holder = event.getSource().getHolder();
-        // 适配 1.12.2 的 BlockState 接口
         if (holder instanceof BlockState) {
             BlockState state = (BlockState) holder;
             Location fromLoc = state.getBlock().getLocation();
             if (plugin.getDataManager().isContainerLocked(fromLoc)) {
-                event.setCancelled(true); // 阻止从锁定容器移出物品
+                event.setCancelled(true);
             }
         }
     }
