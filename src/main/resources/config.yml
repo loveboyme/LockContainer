@@ -1,0 +1,31 @@
+# LockContainer 插件配置
+
+messages:
+  no-permission: '&c你没有权限操作此容器!'
+  container-locked: '&c此容器已被 {owner} 锁定。'
+  container-unlocked: '&a容器已解锁。'
+  trusted-player-added: '&a已将玩家 {player} 添加到容器的信任列表。'
+  trusted-player-removed: '&c已将玩家 {player} 从容器的信任列表移除。'
+  adding-player-prompt: '&a请在聊天框中输入要添加的玩家名称。'
+  add-player-success: '&a成功将玩家 {player} 添加到信任列表。'
+  add-player-failed: '&c添加玩家失败，请检查玩家名称是否正确。'
+  remove-player-success: '&a成功将玩家 {player} 从信任列表移除。'
+  remove-player-failed: '&c移除玩家失败。'
+
+settings:
+  # 是否允许所有者无条件访问容器
+  allow-owner-bypass: true
+
+  # 是否阻止非所有者/信任玩家破坏已锁定的容器
+  prevent-break-locked: true
+
+  # (可以添加更多全局设置，例如最大信任玩家数量等)
+
+custom-containers:
+  # 在此添加额外的容器方块类型，使用 Bukkit Material 名称
+  # 例如: MINECART_CHEST
+  additional-types:
+    - ENDER_CHEST
+    - WHITE_SHULKER_BOX
+
+# (可以根据插件的功能扩展更多配置项)

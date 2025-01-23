@@ -1,0 +1,14 @@
+name: LockContainer
+version: 1.0.0
+api-version: 1.12
+main: cn.panda.lockcontainer.LockContainer
+authors: [Panda]
+description: Provides a simple way to lock and protect your containers.
+commands:
+  lockcontainer:
+   description: Base command for LockContainer.
+   usage: /<command> help
+permissions:
+  lockcontainer.use:
+    description: Allows player to use the lock container functionality.
+    default: op
