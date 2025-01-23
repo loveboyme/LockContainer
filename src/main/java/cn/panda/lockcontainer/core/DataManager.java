@@ -4,7 +4,6 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import cn.panda.lockcontainer.LockContainer;
 import java.io.*;
 import java.lang.reflect.Type;
@@ -64,7 +63,6 @@ public class DataManager {
                 Map<String, ContainerData> loaded = gson.fromJson(reader, type);
                 if (loaded != null) {
                     containerDataCache.putAll(loaded);
-                    // 初始化锁牌数据
                     loaded.values().forEach(data -> {
                         data.signLocations.forEach(loc -> {
                             if (loc.getWorld() != null) {
@@ -75,7 +73,7 @@ public class DataManager {
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().severe("数据加载失败: " + e.getMessage());
+            plugin.getLogger().severe("Data load failed: " + e.getMessage());
         }
     }
 
@@ -83,7 +81,7 @@ public class DataManager {
         try (FileWriter writer = new FileWriter(dataFile)) {
             gson.toJson(containerDataCache, writer);
         } catch (IOException e) {
-            plugin.getLogger().severe("数据保存失败: " + e.getMessage());
+            plugin.getLogger().severe("Data save failed: " + e.getMessage());
         }
     }
 
@@ -116,26 +114,32 @@ public class DataManager {
 
     public boolean unlockContainer(Location loc) {
         if (loc == null || loc.getWorld() == null) return false;
-        String key = getContainerKey(loc);
-        ContainerData data = containerDataCache.remove(key);
-        if (data == null) return false;
 
-        // 删除物理木牌
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            data.signLocations.forEach(signLoc -> {
-                if (signLoc.getWorld() == null) return;
-                Block block = signLoc.getBlock();
-                if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
-                    block.setType(Material.AIR);
-                    plugin.getLogger().info("已移除木牌: " + signLoc);
-                }
-            });
-        });
+        List<Location> connectedContainers = plugin.getContainerManager().getConnectedContainers(loc);
+        boolean success = false;
 
-        // 清理数据
-        data.signLocations.forEach(this::removeLockedSign);
-        CompletableFuture.runAsync(this::saveAllData);
-        return true;
+        for (Location connectedLoc : connectedContainers) {
+            String key = getContainerKey(connectedLoc);
+            ContainerData data = containerDataCache.remove(key);
+            if (data != null) {
+                success = true;
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    data.signLocations.forEach(signLoc -> {
+                        if (signLoc.getWorld() == null) return;
+                        Block block = signLoc.getBlock();
+                        if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
+                            block.setType(Material.AIR);
+                        }
+                    });
+                });
+                data.signLocations.forEach(this::removeLockedSign);
+            }
+        }
+
+        if (success) {
+            CompletableFuture.runAsync(this::saveAllData);
+        }
+        return success;
     }
 
     public boolean addTrustedPlayer(Location loc, UUID player) {
