@@ -2,6 +2,7 @@ package cn.panda.lockcontainer.listener;
 
 import cn.panda.lockcontainer.LockContainer;
 import cn.panda.lockcontainer.core.DataManager;
+import cn.panda.lockcontainer.utils.ContainerUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -41,7 +42,7 @@ public class BlockListener implements Listener {
         if (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) {
             if (plugin.getDataManager().isSignLocked(blockLoc)) {
                 // 查找关联的容器
-                Location containerLoc = findNearbyContainer(blockLoc);
+                Location containerLoc = ContainerUtils.findAttachedContainer(blockLoc, plugin);
                 if (containerLoc != null) {
                     DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
                     if (data != null) {
@@ -60,16 +61,5 @@ public class BlockListener implements Listener {
                 }
             }
         }
-    }
-
-    private Location findNearbyContainer(Location signLoc) {
-        BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
-        for (BlockFace face : faces) {
-            Block block = signLoc.getBlock().getRelative(face);
-            if (plugin.getContainerManager().isSupportedContainer(block)) {
-                return block.getLocation();
-            }
-        }
-        return null;
     }
 }

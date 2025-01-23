@@ -1,14 +1,14 @@
 package cn.panda.lockcontainer.listener;
 
+import cn.panda.lockcontainer.LockContainer;
+import cn.panda.lockcontainer.core.DataManager;
+import cn.panda.lockcontainer.utils.ContainerUtils;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
-import cn.panda.lockcontainer.LockContainer;
-import org.bukkit.Location;
-import cn.panda.lockcontainer.core.DataManager;
 import java.util.List;
 
 public class SignListener implements Listener {
@@ -24,7 +24,7 @@ public class SignListener implements Listener {
         Player player = event.getPlayer();
         Block signBlock = event.getBlock();
         String[] lines = event.getLines();
-        Location containerLoc = findNearbyContainer(signBlock.getLocation());
+        Location containerLoc = ContainerUtils.findAttachedContainer(signBlock.getLocation(), plugin);
 
         if (containerLoc == null || !plugin.getContainerManager().isSupportedContainer(containerLoc.getBlock())) {
             return;
@@ -74,21 +74,5 @@ public class SignListener implements Listener {
                 player.sendMessage("§c部分容器锁定失败，请检查容器状态！");
             }
         }
-    }
-
-    private Location findNearbyContainer(Location signLoc) {
-        BlockFace[] checkFaces = {
-                BlockFace.NORTH, BlockFace.SOUTH,
-                BlockFace.EAST, BlockFace.WEST,
-                BlockFace.UP, BlockFace.DOWN
-        };
-
-        for (BlockFace face : checkFaces) {
-            Block block = signLoc.getBlock().getRelative(face);
-            if (plugin.getContainerManager().isSupportedContainer(block)) {
-                return block.getLocation();
-            }
-        }
-        return null;
     }
 }

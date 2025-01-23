@@ -2,6 +2,7 @@ package cn.panda.lockcontainer.listener;
 
 import cn.panda.lockcontainer.LockContainer;
 import cn.panda.lockcontainer.core.DataManager;
+import cn.panda.lockcontainer.utils.ContainerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,7 +13,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class PlayerListener implements Listener {
         if (block == null) return;
 
         if ((block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST) && player.isSneaking()) {
-            Location containerLoc = findNearbyContainer(block.getLocation());
+            Location containerLoc = ContainerUtils.findAttachedContainer(block.getLocation(), plugin);
             if (containerLoc != null && plugin.getDataManager().isContainerLocked(containerLoc)) {
                 DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
                 if (data != null) {
@@ -100,16 +100,5 @@ public class PlayerListener implements Listener {
         } else {
             player.sendMessage("§c该玩家已在所有关联容器的信任列表中");
         }
-    }
-
-    private Location findNearbyContainer(Location signLoc) {
-        BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
-        for (BlockFace face : faces) {
-            Block block = signLoc.getBlock().getRelative(face);
-            if (plugin.getContainerManager().isSupportedContainer(block)) {
-                return block.getLocation();
-            }
-        }
-        return null;
     }
 }
