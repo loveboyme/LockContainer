@@ -130,7 +130,7 @@ public class GUIHandler {
 
         int start = page * 45;
         int end = Math.min(start + 45, data.trustedPlayers.size());
-        int slot = 0;
+        int slot = 1;
 
         for (int i = start; i < end; i++) {
             UUID memberId = data.trustedPlayers.get(i);
