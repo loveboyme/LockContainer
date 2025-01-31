@@ -100,58 +100,68 @@ public class GUIHandler {
     }
 
     public void openMemberMenu(Player player, Location containerLoc, int page) {
-        DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
-        if (data == null) return;
+        // 异步加载数据
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            DataManager.ContainerData data = plugin.getDataManager().getContainerData(containerLoc);
+            if (data == null) return;
 
-        Inventory gui = Bukkit.createInventory(null, 54, ChatColor.BLACK + "信任成员管理 " + ChatColor.GRAY + "(第 " + (page+1) + " 页)");
-        setCurrentPage(player.getUniqueId(), page); // 使用公共方法设置页码
+            Inventory gui = Bukkit.createInventory(null, 54, ChatColor.BLACK + "信任成员管理 " + ChatColor.GRAY + "(第 " + (page + 1) + " 页)");
+            setCurrentPage(player.getUniqueId(), page); // 使用公共方法设置页码
 
-        ItemStack backItem = new ItemStack(Material.ARROW);
-        ItemMeta backMeta = backItem.getItemMeta();
-        backMeta.setDisplayName(ChatColor.WHITE + "返回主菜单");
-        backItem.setItemMeta(backMeta);
-        gui.setItem(45, backItem);
+            ItemStack backItem = new ItemStack(Material.ARROW);
+            ItemMeta backMeta = backItem.getItemMeta();
+            backMeta.setDisplayName(ChatColor.WHITE + "返回主菜单");
+            backItem.setItemMeta(backMeta);
+            gui.setItem(45, backItem);
 
-        if (page > 0) {
-            ItemStack prevPage = new ItemStack(Material.PAPER);
-            ItemMeta prevMeta = prevPage.getItemMeta();
-            prevMeta.setDisplayName(ChatColor.GREEN + "上一页");
-            prevPage.setItemMeta(prevMeta);
-            gui.setItem(48, prevPage);
-        }
+            if (page > 0) {
+                ItemStack prevPage = new ItemStack(Material.PAPER);
+                ItemMeta prevMeta = prevPage.getItemMeta();
+                prevMeta.setDisplayName(ChatColor.GREEN + "上一页");
+                prevPage.setItemMeta(prevMeta);
+                gui.setItem(48, prevPage);
+            }
 
-        if (data.trustedPlayers.size() > (page + 1) * 45) {
-            ItemStack nextPage = new ItemStack(Material.PAPER);
-            ItemMeta nextMeta = nextPage.getItemMeta();
-            nextMeta.setDisplayName(ChatColor.GREEN + "下一页");
-            nextPage.setItemMeta(nextMeta);
-            gui.setItem(50, nextPage);
-        }
+            if (data.trustedPlayers.size() > (page + 1) * 45) {
+                ItemStack nextPage = new ItemStack(Material.PAPER);
+                ItemMeta nextMeta = nextPage.getItemMeta();
+                nextMeta.setDisplayName(ChatColor.GREEN + "下一页");
+                nextPage.setItemMeta(nextMeta);
+                gui.setItem(50, nextPage);
+            }
 
-        int start = page * 45;
-        int end = Math.min(start + 45, data.trustedPlayers.size());
-        int slot = 1;
+            int start = page * 45;
+            int end = Math.min(start + 45, data.trustedPlayers.size());
+            List<ItemStack> memberHeads = new ArrayList<>();
 
-        for (int i = start; i < end; i++) {
-            UUID memberId = data.trustedPlayers.get(i);
-            OfflinePlayer member = Bukkit.getOfflinePlayer(memberId);
+            for (int i = start; i < end; i++) {
+                UUID memberId = data.trustedPlayers.get(i);
+                OfflinePlayer member = Bukkit.getOfflinePlayer(memberId);
 
-            ItemStack head = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
-            SkullMeta meta = (SkullMeta) head.getItemMeta();
-            meta.setOwningPlayer(member);
-            meta.setDisplayName(ChatColor.YELLOW + member.getName());
-            meta.setLore(Arrays.asList(
-                    ChatColor.GRAY + "UUID: " + memberId,
-                    ChatColor.DARK_GRAY + "右键点击移除"
-            ));
-            head.setItemMeta(meta);
-            gui.setItem(slot, head);
-            slot++;
-        }
+                ItemStack head = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
+                SkullMeta meta = (SkullMeta) head.getItemMeta();
+                meta.setOwningPlayer(member);
+                meta.setDisplayName(ChatColor.YELLOW + member.getName());
+                meta.setLore(Arrays.asList(
+                        ChatColor.GRAY + "UUID: " + memberId,
+                        ChatColor.DARK_GRAY + "右键点击移除"
+                ));
+                head.setItemMeta(meta);
+                memberHeads.add(head);
+            }
 
-        ItemStack locMarker = createLocationMarker(containerLoc);
-        gui.setItem(0, locMarker);
-        player.openInventory(gui);
+            ItemStack locMarker = createLocationMarker(containerLoc);
+            gui.setItem(0, locMarker);
+
+            // 切换回主线程更新 GUI
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                int slotIndex = 1; // 物品槽位从 1 开始
+                for (ItemStack head : memberHeads) {
+                    gui.setItem(slotIndex++, head);
+                }
+                player.openInventory(gui);
+            });
+        });
     }
 
     private ItemStack createLocationMarker(Location loc) {

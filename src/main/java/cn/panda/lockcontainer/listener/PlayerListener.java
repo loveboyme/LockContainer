@@ -86,6 +86,15 @@ public class PlayerListener implements Listener {
     }
 
     private void handleAddPlayer(Player player, Location loc, UUID targetUUID, String displayName) {
+        DataManager.ContainerData data = plugin.getDataManager().getContainerData(loc);
+        if (data == null) return;
+
+        // 检查是否尝试添加自己
+        if (targetUUID.equals(player.getUniqueId())) {
+            player.sendMessage("§c您已经是容器的所有者，无需将自己添加到信任列表。");
+            return; // 直接返回，不执行添加操作
+        }
+
         List<Location> connectedContainers = plugin.getContainerManager().getConnectedContainers(loc);
         int addedCount = 0;
 

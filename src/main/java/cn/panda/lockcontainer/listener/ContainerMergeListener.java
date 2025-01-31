@@ -1,4 +1,3 @@
-// 新增容器合并监听类 ContainerMergeListener.java
 package cn.panda.lockcontainer.listener;
 
 import cn.panda.lockcontainer.LockContainer;
@@ -46,7 +45,7 @@ public class ContainerMergeListener implements Listener {
                 if (plugin.getDataManager().isContainerLocked(adjacentLoc)) {
                     DataManager.ContainerData data = plugin.getDataManager().getContainerData(adjacentLoc);
 
-                    // 检查权限
+                    // 检查权限 (保持原有逻辑，阻止非信任玩家合并)
                     if (data != null &&
                             !data.owner.equals(player.getUniqueId()) &&
                             !data.trustedPlayers.contains(player.getUniqueId())) {
